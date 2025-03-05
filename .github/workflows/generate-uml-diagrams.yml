@@ -1,0 +1,50 @@
+name: Generate UML Diagrams
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate-diagrams:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz plantuml
+          python -m pip install --upgrade pip
+          pip install pylint
+      - name: Run Pyreverse
+        run: |
+          mkdir -p diagrams
+          pyreverse -Smn -o png -p canvas ./core/src/toga/widgets/canvas
+          pyreverse -ASmn -o png -p windows ./winforms/src/toga_winforms/widgets/canvas.py
+          pyreverse -ASmn -o png -p macOS ./cocoa/src/toga_cocoa/widgets/canvas.py
+          pyreverse -ASmn -o png -p gtk ./gtk/src/toga_gtk/widgets/canvas.py
+          pyreverse -ASmn -o png -p android ./android/src/toga_android/widgets/canvas.py
+          pyreverse -ASmn -o png -p iOS ./iOS/src/toga_iOS/widgets/canvas.py
+          pyreverse -ASmn -o png -p dummy ./dummy/src/toga_dummy/widgets/canvas.py
+          pyreverse -Smn -o png -p examples ./examples/canvas/canvas
+          plantuml -tpng -o diagrams/ ./toga_architecture.puml
+          mv classes_canvas.png diagrams/
+          mv classes_windows.png diagrams/
+          mv classes_macOS.png diagrams/
+          mv classes_gtk.png diagrams/
+          mv classes_android.png diagrams/
+          mv classes_iOS.png diagrams/
+          mv classes_dummy.png diagrams/
+          mv classes_examples.png diagrams/
+      - name: Upload UML Diagrams as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uml-diagrams
+          path: diagrams/*
